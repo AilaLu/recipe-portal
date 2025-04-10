@@ -1,18 +1,14 @@
-// frontend/src/App.jsx
 import './App.css';
 import { Link, useNavigate, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
 import logo from './assets/viva-chef-logo.svg';
 import RecipeDetailsModal from './ RecipeDetailsModal';
-import GroceryList from './GroceryList'; 
+import GroceryList from './GroceryList';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToGroceryList } from './slices/grocerySlice';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [errorSuggestions, setErrorSuggestions] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [loadingResults, setLoadingResults] = useState(false);
   const [errorResults, setErrorResults] = useState(null);
@@ -23,46 +19,15 @@ function App() {
   const groceryList = useSelector((state) => state.grocery.items);
 
   const handleSearchChange = (event) => {
-    const newSearchTerm = event.target.value;
-    setSearchTerm(newSearchTerm);
-    if (newSearchTerm.trim()) {
-      fetchSuggestions(newSearchTerm);
-    } else {
-      setSuggestions([]);
-    }
+    setSearchTerm(event.target.value);
   };
 
   const handleSearchClear = () => {
     setSearchTerm('');
-    setSuggestions([]);
     setSearchResults([]);
-    setErrorSuggestions(null);
     setErrorResults(null);
     setIsModalOpen(false);
     setSelectedRecipe(null);
-  };
-
-  const fetchSuggestions = async (query) => {
-    setLoadingSuggestions(true);
-    setErrorSuggestions(null);
-    try {
-      const response = await fetch(`/api/recipes/search?query=${query}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      if (response.status === 204) {
-        setSuggestions([]);
-      } else {
-        const data = await response.json();
-        setSuggestions(data);
-      }
-    } catch (error) {
-      setErrorSuggestions(error.message);
-      console.error('Error fetching suggestions:', error);
-      setSuggestions([]);
-    } finally {
-      setLoadingSuggestions(false);
-    }
   };
 
   const handleSearchSubmit = async (event) => {
@@ -72,17 +37,22 @@ function App() {
       setErrorResults(null);
       return;
     }
-    setSearchResults(suggestions.filter(recipe =>
-      recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ));
-    setSuggestions([]);
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    setSearchTerm(suggestion.name);
-    setSuggestions([]);
-    setSelectedRecipe(suggestion);
-    setIsModalOpen(true);
+    setLoadingResults(true);
+    setErrorResults(null);
+    try {
+      const response = await fetch(`/api/recipes/search?query=${searchTerm}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      setErrorResults(error.message);
+      console.error('Error searching recipes:', error);
+      setSearchResults([]);
+    } finally {
+      setLoadingResults(false);
+    }
   };
 
   const handleRecipeCardClick = (recipe) => {
@@ -110,6 +80,9 @@ function App() {
       className="bg-white rounded-md shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg flex flex-col"
     >
       <h3 className="text-lg font-semibold mb-2">{recipe.name}</h3>
+      {recipe.ingredients && recipe.ingredients.map((ingredient, index) => (
+        <p key={index} className="text-sm text-gray-700">{ingredient.name} {ingredient.quantity && `${ingredient.quantity}`} {ingredient.unit}</p>
+      ))}
       <button
         onClick={() => handleAddToGrocery(recipe)}
         className="bg-[#D43D88] text-white rounded-full py-2 px-4 mt-2 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[#D43D88] self-start"
@@ -154,9 +127,6 @@ function App() {
                     name="recipe-search"
                     type="text"
                     autoComplete="off"
-                    role="combobox"
-                    aria-autocomplete="list"
-                    aria-expanded={suggestions.length > 0}
                     placeholder="search recipe"
                     className="bg-white w-full rounded-full py-3 pl-5 pr-10 focus:outline-none"
                     value={searchTerm}
@@ -166,35 +136,13 @@ function App() {
                     <button
                       type="button"
                       onClick={handleSearchClear}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 hover:text-gray-700 focus:outline-none rounded-full flex items-center justify-center"
+                      style={{ borderRadius: '50%' }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
-                  )}
-                  {loadingSuggestions && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-md z-10">
-                      <div className="py-2 px-4 text-gray-600">Loading suggestions...</div>
-                    </div>
-                  )}
-                  {errorSuggestions && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-red-500 rounded shadow-md z-10">
-                      <div className="py-2 px-4 text-red-600">Error: {errorSuggestions}</div>
-                    </div>
-                  )}
-                  {suggestions.length > 0 && !loadingSuggestions && !errorSuggestions && (
-                    <ul className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-md z-10">
-                      {suggestions.map((suggestion) => (
-                        <li
-                          key={suggestion._id}
-                          className="py-2 px-4 text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => handleSuggestionClick(suggestion)}
-                        >
-                          {suggestion.name}
-                        </li>
-                      ))}
-                    </ul>
                   )}
                 </div>
                 <button
@@ -219,10 +167,8 @@ function App() {
                 </div>
               )}
 
-              {/* Login Button */}
               <div className="text-center mt-8">
                 <button
-                  // onClick={loginWithGoogle}
                   className="bg-[#D43D88] text-white rounded-full py-3 px-8 hover:bg-[#D43D88] focus:outline-none focus:ring-2 focus:bg-[#D43D88]"
                 >
                   Login with Google
@@ -235,7 +181,6 @@ function App() {
         <Route path="/grocery" element={<GroceryList />} />
       </Routes>
 
-      {/* Recipe Details Modal */}
       {isModalOpen && selectedRecipe && (
         <RecipeDetailsModal recipe={selectedRecipe} onClose={closeModal} />
       )}

@@ -1,8 +1,14 @@
 import express from 'express';
 import { Recipe } from '../model/Recipe.js';
 import mongoose from 'mongoose';
+import OpenAI from 'openai';
 
 const router = express.Router();
+
+// Initialize OpenAI (ensure your API key is set in .env)
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // GET /api/recipes/search?query=<partial_recipe_name>
 router.get('/search', async (req, res) => {
@@ -16,7 +22,67 @@ router.get('/search', async (req, res) => {
     const results = await Recipe.find({ $text: { $search: query } })
       .sort({ score: { $meta: 'textScore' } })
       .limit(5);
-    res.json(results);
+
+    if (results.length > 0) {
+      console.log('return jasonnnnn')
+      return res.json(results);
+    } else {
+      try {
+        console.log('No results found, calling OpenAI...')
+        const chatCompletion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [{
+            role: "user",
+            content: `Generate 5 recipes in JSON format for "${query}". Each recipe should have "name" (string) and "ingredients" (array of ingredient objects with "name", "quantity" (string), and optional "unit" (string)). Return a JSON array of these recipe objects. Example: ${JSON.stringify([
+              { "name": "Recipe 1", "ingredients": [{ "name": "Ing 1", "quantity": "1" }] },
+              { "name": "Recipe 2", "ingredients": [{ "name": "Ing A", "quantity": "2" }] }
+            ])}`
+          }],
+          n: 1,
+          response_format: { type: "json_object" },
+        });
+
+        if (chatCompletion.choices && chatCompletion.choices.length > 0) {
+          try {
+            const content = chatCompletion.choices[0].message?.content;
+            if (content) {
+              const aiRecipes = JSON.parse(content);
+              if (Array.isArray(aiRecipes)) {
+                // Immediately send the AI-generated recipes to the frontend
+                res.json(aiRecipes.map(recipe => ({ ...recipe, isAiGenerated: true })));
+
+                // Asynchronously save the AI-generated recipes to the database
+                aiRecipes.forEach(async (aiRecipe) => {
+                  try {
+                    const existingRecipe = await Recipe.findOne({ name: aiRecipe.name });
+                    if (!existingRecipe) {
+                      const newRecipe = new Recipe({ ...aiRecipe, isAiGenerated: true });
+                      await newRecipe.save();
+                      console.log(`AI-generated recipe "${aiRecipe.name}" saved.`);
+                    }
+                  } catch (saveError) {
+                    console.error('Error saving AI-generated recipe:', saveError);
+                  }
+                });
+              } else {
+                console.error('ChatGPT response is not an array:', aiRecipes);
+                return res.status(500).json({ error: 'Failed to parse AI recipes.' });
+              }
+            } else {
+              return res.status(500).json({ error: 'ChatGPT response content is empty.' });
+            }
+          } catch (parseError) {
+            console.error('Error parsing ChatGPT JSON response:', parseError);
+            return res.status(500).json({ error: 'Failed to parse AI recipe JSON.' });
+          }
+        } else {
+          return res.status(500).json({ error: 'Failed to generate recipes from ChatGPT.' });
+        }
+      } catch (openAiError) {
+        console.error('OpenAI API error:', openAiError);
+        return res.status(500).json({ error: `Error communicating with the ChatGPT API: ${openAiError.message}` });
+      }
+    }
   } catch (error) {
     console.error('Error during recipe search:', error);
     res.status(500).json({ message: 'Failed to search recipes.' });

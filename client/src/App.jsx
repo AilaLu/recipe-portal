@@ -1,4 +1,6 @@
 import './App.css';
+import dotenv from 'dotenv'
+dotenv.config
 import { Link, useNavigate, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
 import logo from './assets/viva-chef-logo.svg';
@@ -6,6 +8,11 @@ import RecipeDetailsModal from './ RecipeDetailsModal';
 import GroceryList from './GroceryList';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToGroceryList } from './slices/grocerySlice';
+// import GoogleAuthCallback from './GoogleAuthCallback'; // Import the callback component
+
+// // Access Google Client ID from environment variable
+// const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+// const GOOGLE_REDIRECT_URI = '/auth/google/callback'; // Frontend route
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,6 +61,16 @@ function App() {
       setLoadingResults(false);
     }
   };
+
+  // const handleGoogleLogin = () => {
+  //   if (!GOOGLE_CLIENT_ID) {
+  //     console.error("Google Client ID is not set in the environment variables!");
+  //     return;
+  //   }
+  //   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${window.location.origin}${GOOGLE_REDIRECT_URI}&scope=profile email&response_type=code`;
+  //   window.location.href = authUrl;
+  // };
+
 
   const handleRecipeCardClick = (recipe) => {
     setSelectedRecipe(recipe);
@@ -169,6 +186,7 @@ function App() {
 
               <div className="text-center mt-8">
                 <button
+                // onClick={handleGoogleLogin}
                   className="bg-[#D43D88] text-white rounded-full py-3 px-8 hover:bg-[#D43D88] focus:outline-none focus:ring-2 focus:bg-[#D43D88]"
                 >
                   Login with Google

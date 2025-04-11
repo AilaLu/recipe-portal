@@ -1,0 +1,12 @@
+{
+ "version": 2,
+ "builds": [
+   {
+     "src": "app.js", // Or your backend entry point
+     "use": "@vercel/node"
+   }
+ ],
+ "routes": [
+   { "src": "/api/(.*)", "dest": "/app.js" } // Example: Route all /api/* requests to your backend
+ ]
+}

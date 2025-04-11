@@ -1,9 +1,21 @@
 {
  "version": 2,
  "builds": [
-   { "src": "client", "use": "@vercel/react-app" }
+   {
+     "src": "client",
+     "use": "@vercel/react-app",
+     "config": {
+       "outputDirectory": "dist" // Tell Vercel to look for the built assets in the 'dist' folder inside 'client'
+     }
+   },
+   {
+     "src": "server/index.js",
+     "use": "@vercel/node"
+   }
  ],
  "routes": [
+   { "src": "/api/(.*)", "dest": "/server/index.js/api/$1" },
+   { "src": "/auth/(.*)", "dest": "/server/index.js/auth/$1" },
    { "src": "/(.*)", "dest": "/" }
  ]
 }

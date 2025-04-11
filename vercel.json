@@ -6,12 +6,13 @@
      "use": "@vercel/react-app"
    },
    {
-     "src": "server/app.js",
+     "src": "server/index.js", // Point to the combined entry point
      "use": "@vercel/node"
    }
  ],
  "routes": [
-   { "src": "/api/(.*)", "dest": "/server/app.js" },
+   { "src": "/api/(.*)", "dest": "/server/index.js/api/$1" }, // Adjust dest to match the route prefix
+   { "src": "/auth/(.*)", "dest": "/server/index.js/auth/$1" }, // Adjust dest for auth routes
    { "src": "/(.*)", "dest": "/" }
  ]
 }

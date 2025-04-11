@@ -5,7 +5,7 @@
      "src": "client",
      "use": "@vercel/react-app",
      "config": {
-       "outputDirectory": "dist" // Tell Vercel to look for the built assets in the 'dist' folder inside 'client'
+       "outputDirectory": "dist"
      }
    },
    {
@@ -16,6 +16,7 @@
  "routes": [
    { "src": "/api/(.*)", "dest": "/server/index.js/api/$1" },
    { "src": "/auth/(.*)", "dest": "/server/index.js/auth/$1" },
-   { "src": "/(.*)", "dest": "/" }
+   { "src": "/", "dest": "/index.html" },
+   { "src": "/(.*)", "dest": "/index.html" }
  ]
 }

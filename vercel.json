@@ -1,16 +1,7 @@
 {
  "version": 2,
- "functions": {
-   "api/[...path]": {
-     "handler": "server/index.js"
-   },
-   "auth/[...path]": {
-     "handler": "server/index.js"
-   }
- },
  "routes": [
-   { "src": "/api/(.*)", "dest": "/api/$1" },
-   { "src": "/auth/(.*)", "dest": "/auth/$1" },
-   { "src": "/(.*)", "dest": "/" }
+   { "src": "/api/(.*)", "dest": "server/index.js" },
+   { "src": "/auth/(.*)", "dest": "server/index.js" }
  ]
 }
